@@ -1,55 +1,38 @@
 #!/usr/bin/env python
-
-from obspy.imaging.maps import plot_basemap
-from mpl_toolkits.basemap import Basemap
-from obspy.clients.fdsn import Client
-from matplotlib.cm import get_cmap
-from obspy.core import UTCDateTime
-from obspy import read_inventory 
 import matplotlib.pyplot as plt
-import matplotlib as mpl
 import numpy as np
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
 
-## Set Font Parameters ##
-mpl.rc('font',family='serif')
-mpl.rc('font',serif='Times') 
-mpl.rc('text', usetex=True)
-mpl.rc('font',size=18)
 
-debug = True
-sta = []
-lat = []
-lon = []
 
-# Grab the stations lats and lons ##
-f = open('Fig1_stations.csv','r')
-info = f.readline()
-for line in f:
-    line = line.split(',')
-    sta.append(str(line[0]))
-    lat.append(float(line[1]))
-    lon.append(float(line[2]))
-f.close()
-if debug:
-	print('sta: ' + str(sta))
-	print('lat: ' + str(lat))
-	print('lon: ' + str(lon))
+def setupmap(central_lon, central_lat,handle):
+    #handle = plt.axes(projection=ccrs.AlbersEqualArea(central_lon, central_lat))
+    handle.set_extent(extent)
 
-## Create Figure ##
-plt.figure(1, figsize=(12,12))
-m = Basemap(width=5500000,height=2858550,projection='lcc',
-            resolution='c',lat_0=39,lon_0=-97.)
+    handle.add_feature(cfeature.LAND)
+    handle.add_feature(cfeature.OCEAN)
+    handle.add_feature(cfeature.COASTLINE)
+    handle.add_feature(cfeature.BORDERS, linestyle=':')
+    handle.add_feature(cfeature.LAKES, alpha=0.5)
+    handle.add_feature(cfeature.RIVERS)
+    handle.add_feature(cfeature.STATES, edgecolor='gray')
+    return handle
 
-## Plot ##
-m.drawcountries()
-m.shadedrelief()
-x,y = m(lon, lat)
-m.scatter(x,y,marker='D',color='k')
-for tri in zip(x,y,sta):
-	if tri[2] == 'TST':
-		plt.text(tri[0]-100000,tri[1]-150000, tri[2], fontsize=13)
-	else:
-		plt.text(tri[0]-100000,tri[1]+70000, tri[2], fontsize=13)
 
-plt.savefig('Station_Map.PNG')
+# I think your HRV coordinate is wrong
+lats = [34.945911,38.055698,42.506401,34.945911,32.309799,38.228901]
+lons = [-106.457199,-91.244598,-71.558296,-106.457199,-110.784698,-86.2939]
+
+fig= plt.figure(figsize=(12,12))
+
+boxcoords=[20., -120, 55 ,-66.]
+extent=[boxcoords[1], boxcoords[3], boxcoords[0], boxcoords[2]]
+central_lon = np.mean(extent[:2])
+central_lat = np.mean(extent[2:])            
+ax = plt.subplot(1,1,1, projection=ccrs.AlbersEqualArea(central_lon, central_lat))
+ax = setupmap(central_lon, central_lat, ax)
+sc = ax.scatter(lons, lats, transform=ccrs.PlateCarree(),marker='D',color='k')
+ax.stock_img()
+plt.savefig('Station_Map.png', format='PNG')
 plt.show()
